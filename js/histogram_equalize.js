@@ -77,16 +77,45 @@
       
   }
 
+    function drawHistogramOnCanvas(histogram, canvasId) {
+        // Get the canvas element and its drawing context
+        var canvas = document.getElementById(canvasId);
+        var ctx = canvas.getContext('2d');
+
+        // Clear the canvas
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+        // Find the maximum value in the histogram for normalization
+        var maxHistogramValue = Math.max.apply(null, histogram);
+
+        // Set the width of each bar and the scale based on the canvas height
+        var barWidth = canvas.width / histogram.length;
+        var scale = canvas.height / maxHistogramValue;
+
+        // Set the fill style for the bars
+        ctx.fillStyle = 'rgb(70, 130, 180)'; // A nice shade of steel blue
+
+        // Draw the bars
+        for (var i = 0; i < histogram.length; i++) {
+            var barHeight = histogram[i] * scale;
+            ctx.fillRect(i * barWidth, canvas.height - barHeight, barWidth, barHeight);
+        }
+    }
+
+
+
   /*
    * Apply automatic contrast to the input data
    */
   imageproc.histogram_equalizer = function(inputData, outputData, type, percentage, show_hist, show_cdf, rand_hist) {
       console.log("Applying histogram equalizer...");
       console.log(type, percentage, show_hist, show_cdf, rand_hist);
+      
 
       // Find the number of pixels to ignore from the percentage
       var pixelsToIgnore = (inputData.data.length / 4) * percentage;
       var histogram = buildHistogram(inputData, type);
+      drawHistogramOnCanvas(histogram, "input-histogram");
       var minMax = findMinMax(histogram, pixelsToIgnore);
       var min = minMax.min, max = minMax.max, range = max - min;
       
@@ -104,6 +133,10 @@
           else if((inputData.data[i + 2] - min) / range * 255 < 0) outputData.data[i + 2] = 0;
           else outputData.data[i + 2] = (inputData.data[i + 2] - min) / range * 255;
       }
+      var histogram2 = buildHistogram(outputData, type);
+      drawHistogramOnCanvas(histogram2, "output-histogram");
+
+      
   }
 
 }(window.imageproc = window.imageproc || {}));
