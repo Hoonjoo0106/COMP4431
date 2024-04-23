@@ -1,10 +1,28 @@
 (function(imageproc) {
     "use strict";
-
+    function delete_histogram(){
+        let his_div_in = document.getElementById("his-div-Input");
+        if(his_div_in != null){
+            let h5_in = document.getElementById("h5-Input");
+            let canvas_in = document.getElementById("his-Input");
+            h5_in.remove();
+            canvas_in.remove();
+            his_div_in.remove();
+        }
+        let his_div_out = document.getElementById("his-div-Output");
+        if(his_div_out != null){
+            let h5_out = document.getElementById("h5-Output");
+            let canvas_out = document.getElementById("his-Output");
+            h5_out.remove();
+            canvas_out.remove();
+            his_div_out.remove();
+        }
+    }
     /*
      * Apply the basic processing operations
      */
     function applyBasicOp(inputImage, outputImage) {
+        delete_histogram();
         switch (currentBasicOp) {
             // Apply negation
             case "negation":
@@ -54,8 +72,7 @@
                 var percentage = parseInt($("#auto-contrast-percentage").val()) / 100.0;
                 imageproc.autoContrast(inputImage, outputImage, type, percentage);
                 break;
-
-            // Apply histogram equalizer
+                // Apply histogram equalizer
             case "his-equal":
                 var type = $("#his-equal-type").val();
                 var percentage = parseInt($("#his-equal-percentage").val()) / 100.0;
