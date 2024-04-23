@@ -99,6 +99,9 @@ $(document).ready(function() {
 
     // Update button to apply all image processing functions
     $("#output-update").on("click", function() { imageproc.apply(); });
+
+    // Update button to apply all image processing functions
+    $("#update-histogram").on("click", function() { ; });
     
     // Enable Bootstrap Toggle
     $("input[type=checkbox]").bootstrapToggle();
