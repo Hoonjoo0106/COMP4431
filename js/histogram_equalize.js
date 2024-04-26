@@ -165,6 +165,35 @@
         holder.appendChild(his_div)
     }
 
+    function drawCDFOnCanvas(histogram, canvasId) {
+        //get canvas
+        const his_canvas = document.getElementById("his-"+canvasId);
+
+        var ctx = his_canvas.getContext('2d');
+
+        // Find the maximum value in the histogram for normalization
+        var sumHistogramValue = histogram.reduce((a, b) => a + b, 0)
+
+        // Set the width of each bar and the scale based on the canvas height
+        var width = his_canvas.width / histogram.length;
+        var scale = his_canvas.height / sumHistogramValue;
+        var height = his_canvas.height;
+
+        // Draw the bars
+        for (var i = 0; i < histogram.length - 1; i++) {
+            // add to cdf
+            height -= histogram[i] * scale;
+
+            // Start a new Path
+            ctx.beginPath();
+            ctx.moveTo(width * i, height + histogram[i] * scale);
+            ctx.lineTo(width * (i + 1), height);
+
+            // Draw the Path
+            ctx.stroke();
+        }
+    }
+
     function findNearest(position_vector, pos){
 
         for(let i = 0; i <= 255; i++){
@@ -189,6 +218,7 @@
         var pixelsToIgnore = (inputData.data.length / 4) * percentage;
         var histogram = buildHistogram(inputData, type);
         if(show_hist) drawHistogramOnCanvas(histogram, "Input");
+        if(show_cdf) drawCDFOnCanvas(histogram, "Input");
         var minMax = findMinMax(histogram, pixelsToIgnore);
         var min = minMax.min, max = minMax.max, range = max - min;
         
@@ -309,6 +339,7 @@
         }
         var histogram2 = buildHistogram(outputData, type);
         if(show_hist) drawHistogramOnCanvas(histogram2, "Output");
+        if(show_cdf) drawCDFOnCanvas(histogram, "Output");
     }
 
 }(window.imageproc = window.imageproc || {}));
