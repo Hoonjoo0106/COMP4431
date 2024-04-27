@@ -235,10 +235,11 @@
         return image_type
     }
 
-    function randomizer(position_vector){
-        for(let i = 0; i < 256; i++) position_vector[i] = Math.floor(Math.random() * 256);
-        position_vector.sort();
-        return position_vector
+    function randomizer(){
+        var randomizer_position_vector = [];
+        for(let i = 0; i < 256; i++) randomizer_position_vector[i] = Math.floor(Math.random() * 256);
+        randomizer_position_vector.sort(function(a, b){return a-b});
+        return randomizer_position_vector
     }
 
 
@@ -283,9 +284,9 @@
             var blue_position_vector = equalizer(blue_histogram);
 
             if(rand_hist) {
-                red_position_vector = randomizer(red_position_vector)
-                green_position_vector = randomizer(green_position_vector)
-                blue_position_vector = randomizer(blue_position_vector)
+                red_position_vector = randomizer();
+                green_position_vector = randomizer();
+                blue_position_vector = randomizer();
             }
 
             //apply equalization
@@ -336,9 +337,9 @@
 
             //histogram equalization
             var position_vector = equalizer(histogram);
-
+            
             //random histogram if needed
-            if(rand_hist) position_vector = randomizer(position_vector);
+            if(rand_hist) position_vector = randomizer();
 
             //apply equalization
             for (var i = 0; i < inputData.data.length; i += 4) {    
@@ -351,7 +352,6 @@
                     }
                     else if(gray_value < 0) gray_value = 0;
                     else if(gray_value > 255) gray_value = 255;
-
                     var diff_reference = position_vector[gray_value] - gray_value;
 
                     if(inputData.data[i] + diff_reference < 0) outputData.data[i] = 0;
