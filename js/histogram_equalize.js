@@ -235,6 +235,12 @@
         return image_type
     }
 
+    function randomizer(position_vector){
+        for(let i = 0; i < 256; i++) position_vector[i] = Math.floor(Math.random() * 256);
+        position_vector.sort();
+        return position_vector
+    }
+
 
     /*
     * Apply automatic contrast to the input data
@@ -275,6 +281,12 @@
             var red_position_vector = equalizer(red_histogram);
             var green_position_vector = equalizer(green_histogram);
             var blue_position_vector = equalizer(blue_histogram);
+
+            if(rand_hist) {
+                red_position_vector = randomizer(red_position_vector)
+                green_position_vector = randomizer(green_position_vector)
+                blue_position_vector = randomizer(blue_position_vector)
+            }
 
             //apply equalization
             for (var i = 0; i < inputData.data.length; i += 4) {
@@ -324,6 +336,9 @@
 
             //histogram equalization
             var position_vector = equalizer(histogram);
+
+            //random histogram if needed
+            if(rand_hist) position_vector = randomizer(position_vector);
 
             //apply equalization
             for (var i = 0; i < inputData.data.length; i += 4) {    
