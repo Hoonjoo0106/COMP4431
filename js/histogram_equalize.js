@@ -1,16 +1,13 @@
 //py -m http.server
 (function(imageproc) {
     "use strict";
-    /*
-    * Build the histogram of the image for a channel
-    */
     function buildHistogram(inputData, channel) {
         var histogram = [];
         for (var i = 0; i < 256; i++)
             histogram[i] = 0;
 
         for(let i = 0; i < inputData.data.length; i += 4){
-            if(channel == "gray") histogram[Math.ceil((inputData.data[i] + inputData.data[i+1] + inputData.data[i+2])/3)] += 1;
+            if(channel == "gray" || channel == "RGB") histogram[Math.ceil((inputData.data[i] + inputData.data[i+1] + inputData.data[i+2])/3)] += 1;
             if(channel == "red") histogram[inputData.data[i]] += 1;
             if(channel == "green") histogram[inputData.data[i+1]] += 1;
             if(channel == "blue") histogram[inputData.data[i+2]] += 1;
@@ -18,9 +15,6 @@
         return histogram;
     }
 
-    /*
-    * Find the min and max of the histogram
-    */
     function findMinMax(histogram, pixelsToIgnore) {
         var min = 0, max = 255;
 
@@ -179,7 +173,7 @@
         var scale = his_canvas.height / sumHistogramValue;
         var height = his_canvas.height;
 
-        // Draw the bars
+        // Draw the line
         for (var i = 0; i < histogram.length - 1; i++) {
             // add to cdf
             height -= histogram[i] * scale;
@@ -206,6 +200,39 @@
                 return pos;
             }
         }
+    }
+
+    function check_image_status(histogram){
+        //recreate title for the image type
+        let previous_image_type = document.getElementById("image-type");
+        if(previous_image_type != null) previous_image_type.remove();
+        const image_type = document.createElement("h5");
+        image_type.setAttribute("id", "image-type");
+
+        let pixel_size = 0;
+        let sum = 0;
+        for (let i = 0; i < histogram.length; i++){
+            pixel_size += histogram[i];
+            sum += histogram[i] * i;
+        }
+        let mean = sum / pixel_size;
+        let variance = 0;
+
+        for (let i = 0; i < histogram.length; i++){
+            variance += Math.pow((i - mean), 2) * histogram[i];
+        }
+        variance /= pixel_size;
+        Math.round(variance);
+
+        // TODO: determine how much mean value will make image dark or light as well as variance range for high and low contrast
+        //dark
+        if(mean < 50) image_type.textContent = "Image Type: Dark";
+        //light
+        else if(mean > 205) image_type.textContent = "Image Type: Light";
+        else image_type.textContent = variance;
+
+        //get histogram holder and append
+        return image_type
     }
 
 
@@ -238,108 +265,167 @@
             else inputData.data[i + 2] = (inputData.data[i + 2] - min) / range * 255;
         }
 
-        //build the histogram after removing the outliers
-        histogram = buildHistogram(inputData, type);
+        if(type == "RGB"){
+            //build the histogram after removing the outliers
+            var red_histogram = buildHistogram(inputData, "red");
+            var green_histogram = buildHistogram(inputData, "green");
+            var blue_histogram = buildHistogram(inputData, "blue");
 
-        //histogram equalization
-        var position_vector = equalizer(histogram);
+            //histogram equalization
+            var red_position_vector = equalizer(red_histogram);
+            var green_position_vector = equalizer(green_histogram);
+            var blue_position_vector = equalizer(blue_histogram);
 
-        //apply equalization
-        for (var i = 0; i < inputData.data.length; i += 4) {    
-        // Adjust each pixel based on the minimum and maximum values
-            if(type == "gray"){
-                var gray_value = Math.ceil((inputData.data[i] + inputData.data[i+1] + inputData.data[i+2]) / 3);
-                //find the nearest position vector
-                if(gray_value != 0 && position_vector[gray_value] == 0){
-                    gray_value = findNearest(position_vector, gray_value);
-                }
-                else if(gray_value < 0) gray_value = 0;
-                else if(gray_value > 255) gray_value = 255;
-
-                var diff_reference = position_vector[gray_value] - gray_value;
-
-                if(inputData.data[i] + diff_reference < 0) outputData.data[i] = 0;
-                else if(inputData.data[i] + diff_reference > 255) outputData.data[i] = 255;
-                else outputData.data[i] = inputData.data[i] + diff_reference
-
-                if(inputData.data[i + 1] + diff_reference < 0) outputData.data[i + 1] = 0;
-                else if(inputData.data[i + 1] + diff_reference > 255) outputData.data[i + 1] = 255;
-                else outputData.data[i + 1] = inputData.data[i + 1] + diff_reference
-
-                if(inputData.data[i + 2] + diff_reference < 0) outputData.data[i + 2] = 0;
-                else if(inputData.data[i + 2] + diff_reference > 255) outputData.data[i + 2] = 255;
-                else outputData.data[i + 2] = inputData.data[i + 2] + diff_reference
-            }
-            else if(type == "red"){
+            //apply equalization
+            for (var i = 0; i < inputData.data.length; i += 4) {
+                //red
                 var red_value = inputData.data[i];
-                if(red_value != 0 && position_vector[red_value] == 0){
-                    red_value = findNearest(position_vector, red_value);
+                if(red_value != 0 && red_position_vector[red_value] == 0){
+                    red_value = findNearest(red_position_vector, red_value);
                 }
                 else if(red_value < 0) red_value = 0;
                 else if(red_value > 255) red_value = 255;
+                var red_diff_reference = red_position_vector[red_value] - red_value;
 
-                var diff_reference = position_vector[red_value] - red_value;
-
-                if(inputData.data[i] + diff_reference < 0) outputData.data[i] = 0;
-                else if(inputData.data[i] + diff_reference > 255) outputData.data[i] = 255;
-                else outputData.data[i] = inputData.data[i] + diff_reference
-
-                if(inputData.data[i + 1] + diff_reference < 0) outputData.data[i + 1] = 0;
-                else if(inputData.data[i + 1] + diff_reference > 255) outputData.data[i + 1] = 255;
-                else outputData.data[i + 1] = inputData.data[i + 1] + diff_reference
-
-                if(inputData.data[i + 2] + diff_reference < 0) outputData.data[i + 2] = 0;
-                else if(inputData.data[i + 2] + diff_reference > 255) outputData.data[i + 2] = 255;
-                else outputData.data[i + 2] = inputData.data[i + 2] + diff_reference
-            }
-            else if(type == "green"){
+                //green
                 var green_value = inputData.data[i + 1];
-                if(green_value != 0 && position_vector[green_value] == 0){
-                    green_value = findNearest(position_vector, green_value);
+                if(green_value != 0 && green_position_vector[green_value] == 0){
+                    green_value = findNearest(green_position_vector, green_value);
                 }
                 else if(green_value < 0) green_value = 0;
                 else if(green_value > 255) green_value = 255;
-                
-                var diff_reference = position_vector[green_value] - green_value;
+                var green_diff_reference = green_position_vector[green_value] - green_value;
 
-                if(inputData.data[i] + diff_reference < 0) outputData.data[i] = 0;
-                else if(inputData.data[i] + diff_reference > 255) outputData.data[i] = 255;
-                else outputData.data[i] = inputData.data[i] + diff_reference
-
-                if(inputData.data[i + 1] + diff_reference < 0) outputData.data[i + 1] = 0;
-                else if(inputData.data[i + 1] + diff_reference > 255) outputData.data[i + 1] = 255;
-                else outputData.data[i + 1] = inputData.data[i + 1] + diff_reference
-
-                if(inputData.data[i + 2] + diff_reference < 0) outputData.data[i + 2] = 0;
-                else if(inputData.data[i + 2] + diff_reference > 255) outputData.data[i + 2] = 255;
-                else outputData.data[i + 2] = inputData.data[i + 2] + diff_reference
-            }
-            else if(type == "blue"){
+                //blue
                 var blue_value = inputData.data[i + 2];
-                if(blue_value != 0 && position_vector[blue_value] == 0){
-                    blue_value = findNearest(position_vector, blue_value);
+                if(blue_value != 0 && blue_position_vector[blue_value] == 0){
+                    blue_value = findNearest(blue_position_vector, blue_value);
                 }
                 else if(blue_value < 0) blue_value = 0;
                 else if(blue_value > 255) blue_value = 255;
-                
-                var diff_reference = position_vector[blue_value] - blue_value;
+                var blue_diff_reference = blue_position_vector[blue_value] - blue_value;
 
-                if(inputData.data[i] + diff_reference < 0) outputData.data[i] = 0;
-                else if(inputData.data[i] + diff_reference > 255) outputData.data[i] = 255;
-                else outputData.data[i] = inputData.data[i] + diff_reference
+                if(inputData.data[i] + red_diff_reference < 0) outputData.data[i] = 0;
+                else if(inputData.data[i] + red_diff_reference > 255) outputData.data[i] = 255;
+                else outputData.data[i] = inputData.data[i] + red_diff_reference
 
-                if(inputData.data[i + 1] + diff_reference < 0) outputData.data[i + 1] = 0;
-                else if(inputData.data[i + 1] + diff_reference > 255) outputData.data[i + 1] = 255;
-                else outputData.data[i + 1] = inputData.data[i + 1] + diff_reference
+                if(inputData.data[i + 1] + green_diff_reference < 0) outputData.data[i + 1] = 0;
+                else if(inputData.data[i + 1] + green_diff_reference > 255) outputData.data[i + 1] = 255;
+                else outputData.data[i + 1] = inputData.data[i + 1] + green_diff_reference
 
-                if(inputData.data[i + 2] + diff_reference < 0) outputData.data[i + 2] = 0;
-                else if(inputData.data[i + 2] + diff_reference > 255) outputData.data[i + 2] = 255;
-                else outputData.data[i + 2] = inputData.data[i + 2] + diff_reference
+                if(inputData.data[i + 2] + blue_diff_reference < 0) outputData.data[i + 2] = 0;
+                else if(inputData.data[i + 2] + blue_diff_reference > 255) outputData.data[i + 2] = 255;
+                else outputData.data[i + 2] = inputData.data[i + 2] + blue_diff_reference
+            }
+        }
+        else{
+            //build the histogram after removing the outliers
+            histogram = buildHistogram(inputData, type);
+
+            //histogram equalization
+            var position_vector = equalizer(histogram);
+
+            //apply equalization
+            for (var i = 0; i < inputData.data.length; i += 4) {    
+            // Adjust each pixel based on the minimum and maximum values
+                if(type == "gray"){
+                    var gray_value = Math.ceil((inputData.data[i] + inputData.data[i+1] + inputData.data[i+2]) / 3);
+                    //find the nearest position vector
+                    if(gray_value != 0 && position_vector[gray_value] == 0){
+                        gray_value = findNearest(position_vector, gray_value);
+                    }
+                    else if(gray_value < 0) gray_value = 0;
+                    else if(gray_value > 255) gray_value = 255;
+
+                    var diff_reference = position_vector[gray_value] - gray_value;
+
+                    if(inputData.data[i] + diff_reference < 0) outputData.data[i] = 0;
+                    else if(inputData.data[i] + diff_reference > 255) outputData.data[i] = 255;
+                    else outputData.data[i] = inputData.data[i] + diff_reference
+
+                    if(inputData.data[i + 1] + diff_reference < 0) outputData.data[i + 1] = 0;
+                    else if(inputData.data[i + 1] + diff_reference > 255) outputData.data[i + 1] = 255;
+                    else outputData.data[i + 1] = inputData.data[i + 1] + diff_reference
+
+                    if(inputData.data[i + 2] + diff_reference < 0) outputData.data[i + 2] = 0;
+                    else if(inputData.data[i + 2] + diff_reference > 255) outputData.data[i + 2] = 255;
+                    else outputData.data[i + 2] = inputData.data[i + 2] + diff_reference
+                }
+                else if(type == "red"){
+                    var red_value = inputData.data[i];
+                    if(red_value != 0 && position_vector[red_value] == 0){
+                        red_value = findNearest(position_vector, red_value);
+                    }
+                    else if(red_value < 0) red_value = 0;
+                    else if(red_value > 255) red_value = 255;
+
+                    var diff_reference = position_vector[red_value] - red_value;
+
+                    if(inputData.data[i] + diff_reference < 0) outputData.data[i] = 0;
+                    else if(inputData.data[i] + diff_reference > 255) outputData.data[i] = 255;
+                    else outputData.data[i] = inputData.data[i] + diff_reference
+
+                    if(inputData.data[i + 1] + diff_reference < 0) outputData.data[i + 1] = 0;
+                    else if(inputData.data[i + 1] + diff_reference > 255) outputData.data[i + 1] = 255;
+                    else outputData.data[i + 1] = inputData.data[i + 1] + diff_reference
+
+                    if(inputData.data[i + 2] + diff_reference < 0) outputData.data[i + 2] = 0;
+                    else if(inputData.data[i + 2] + diff_reference > 255) outputData.data[i + 2] = 255;
+                    else outputData.data[i + 2] = inputData.data[i + 2] + diff_reference
+                }
+                else if(type == "green"){
+                    var green_value = inputData.data[i + 1];
+                    if(green_value != 0 && position_vector[green_value] == 0){
+                        green_value = findNearest(position_vector, green_value);
+                    }
+                    else if(green_value < 0) green_value = 0;
+                    else if(green_value > 255) green_value = 255;
+                    
+                    var diff_reference = position_vector[green_value] - green_value;
+
+                    if(inputData.data[i] + diff_reference < 0) outputData.data[i] = 0;
+                    else if(inputData.data[i] + diff_reference > 255) outputData.data[i] = 255;
+                    else outputData.data[i] = inputData.data[i] + diff_reference
+
+                    if(inputData.data[i + 1] + diff_reference < 0) outputData.data[i + 1] = 0;
+                    else if(inputData.data[i + 1] + diff_reference > 255) outputData.data[i + 1] = 255;
+                    else outputData.data[i + 1] = inputData.data[i + 1] + diff_reference
+
+                    if(inputData.data[i + 2] + diff_reference < 0) outputData.data[i + 2] = 0;
+                    else if(inputData.data[i + 2] + diff_reference > 255) outputData.data[i + 2] = 255;
+                    else outputData.data[i + 2] = inputData.data[i + 2] + diff_reference
+                }
+                else if(type == "blue"){
+                    var blue_value = inputData.data[i + 2];
+                    if(blue_value != 0 && position_vector[blue_value] == 0){
+                        blue_value = findNearest(position_vector, blue_value);
+                    }
+                    else if(blue_value < 0) blue_value = 0;
+                    else if(blue_value > 255) blue_value = 255;
+                    
+                    var diff_reference = position_vector[blue_value] - blue_value;
+
+                    if(inputData.data[i] + diff_reference < 0) outputData.data[i] = 0;
+                    else if(inputData.data[i] + diff_reference > 255) outputData.data[i] = 255;
+                    else outputData.data[i] = inputData.data[i] + diff_reference
+
+                    if(inputData.data[i + 1] + diff_reference < 0) outputData.data[i + 1] = 0;
+                    else if(inputData.data[i + 1] + diff_reference > 255) outputData.data[i + 1] = 255;
+                    else outputData.data[i + 1] = inputData.data[i + 1] + diff_reference
+
+                    if(inputData.data[i + 2] + diff_reference < 0) outputData.data[i + 2] = 0;
+                    else if(inputData.data[i + 2] + diff_reference > 255) outputData.data[i + 2] = 255;
+                    else outputData.data[i + 2] = inputData.data[i + 2] + diff_reference
+                }
             }
         }
         var histogram2 = buildHistogram(outputData, type);
         if(show_hist) drawHistogramOnCanvas(histogram2, "Output");
-        if(show_cdf) drawCDFOnCanvas(histogram, "Output");
+        if(show_cdf) drawCDFOnCanvas(histogram2, "Output");
+        
+        var image_type = check_image_status(histogram);
+        const holder = document.getElementById("histogram-holder");
+        holder.appendChild(image_type);
     }
 
 }(window.imageproc = window.imageproc || {}));
