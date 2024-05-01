@@ -1,6 +1,7 @@
 //py -m http.server
 (function(imageproc) {
     "use strict";
+    
     function buildHistogram(inputData, channel) {
         var histogram = [];
         for (var i = 0; i < 256; i++)
@@ -112,7 +113,7 @@
         return position_vector;
     }
 
-    function drawHistogramOnCanvas(histogram, canvasId) {
+    function drawHistogramOnCanvas(histogram, canvasId, type) {
         //histogram div holder
         const his_div = document.createElement("div");
         his_div.className = "col-6";
@@ -149,7 +150,19 @@
         var scale = his_canvas.height / maxHistogramValue;
 
         // Set the fill style for the bars
-        ctx.fillStyle = 'rgb(70, 130, 180)'; // A nice shade of steel blue
+        if (type === "red") {
+            ctx.fillStyle = 'rgb(255, 0, 0)'; // Red
+        } else if (type === "green") {
+            ctx.fillStyle = 'rgb(0, 255, 0)'; // Green
+        } else if (type === "blue") {
+            ctx.fillStyle = 'rgb(0, 0, 255)'; // Blue
+        } else if (type === "gray") {
+            ctx.fillStyle = 'rgb(70, 130, 180)'; // Steel blue
+        } else if (type === "RGB") {
+            ctx.fillStyle = 'rgb(70, 130, 180)'; // Steel blue
+        } else {
+            ctx.fillStyle = 'rgb(128, 128, 128)'; // Default to Gray
+        }
 
         // Draw the bars
         for (var i = 0; i < histogram.length; i++) {
@@ -435,7 +448,7 @@
             }
         }
         var histogram2 = buildHistogram(outputData, type);
-        if(show_hist) drawHistogramOnCanvas(histogram2, "Output");
+        if(show_hist) drawHistogramOnCanvas(histogram2, "Output", type);
         if(show_cdf) drawCDFOnCanvas(histogram2, "Output");
         
         var image_type = check_image_status(histogram);

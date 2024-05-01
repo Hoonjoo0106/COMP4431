@@ -3,6 +3,7 @@
 
     var input, output;
     var imageSelector;
+    var fileName;
 
     imageproc.operation = null;
 
@@ -15,8 +16,24 @@
         input  = $("#" + inputCanvasId).get(0).getContext("2d");
         output = $("#" + outputCanvasId).get(0).getContext("2d");
 
-        imageSelector = $("#" + inputImageId);
-        imageproc.updateInputImage();
+        imageSelector = $("#" + inputImageId);        
+
+        $("#file-select-btn").on("click", function() {
+            $("#hidden-file-input").click();
+        });
+
+        // Handle the file selection
+        $("#hidden-file-input").on("change", function() {
+            if (this.files.length > 0) {
+                fileName = this.files[0].name;
+                $("#filename-input").val(fileName);
+                imageproc.updateInputImageFile();
+            }
+        });
+
+        $("#image-select").change(function() {
+            imageproc.updateInputImage();
+        });
     }
 
     /*
@@ -28,6 +45,29 @@
             input.drawImage(image, 0, 0);
         }
         image.src = "images/" + imageSelector.val();
+    }
+
+    imageproc.updateInputImageFile = function() {
+        var image = new Image();
+        image.onload = function() {
+            var canvas = document.getElementById('input');
+            var ctx = canvas.getContext('2d');
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+    
+            var hRatio = canvas.width / image.width;
+            var vRatio = canvas.height / image.height;
+            var ratio = Math.min(hRatio, vRatio);
+            
+            var centerShift_x = (canvas.width - image.width * ratio) / 2;
+            var centerShift_y = (canvas.height - image.height * ratio) / 2;
+    
+            ctx.drawImage(image, 0, 0, image.width, image.height,
+                          centerShift_x, centerShift_y, image.width * ratio, image.height * ratio);
+        };
+        image.onerror = function() {
+            console.error("Failed to load image with path:", image.src);
+        };
+        image.src = "images/" + fileName;
     }
 
     /*
