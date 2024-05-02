@@ -16,7 +16,8 @@
         input  = $("#" + inputCanvasId).get(0).getContext("2d");
         output = $("#" + outputCanvasId).get(0).getContext("2d");
 
-        imageSelector = $("#" + inputImageId);        
+        imageSelector = $("#" + inputImageId);
+        imageproc.updateInputImage();        
 
         $("#file-select-btn").on("click", function() {
             $("#hidden-file-input").click();

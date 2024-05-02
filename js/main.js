@@ -109,4 +109,19 @@ $(document).ready(function() {
     // Set up the event handlers
     $('a.nav-link').on("click", showTab); // Tab clicked
     $('a.dropdown-item').on("click", changeTabs); // Tab item clicked
+
+
+    $("#save-btn").on("click", function() {
+        console.log("Save button clicked.");
+        var canvas = document.getElementById('output');
+        if (canvas) {
+            var image = canvas.toDataURL('image/png');
+            var downloadLink = document.createElement('a');
+            downloadLink.href = image;
+            downloadLink.download = 'output-image.png';
+            document.body.appendChild(downloadLink);
+            downloadLink.click();
+            document.body.removeChild(downloadLink);
+        }
+    });
 });
