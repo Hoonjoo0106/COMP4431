@@ -239,10 +239,10 @@
 
         // TODO: determine how much mean value will make image dark or light as well as variance range for high and low contrast
         //dark
-        if(mean < 50) image_type.textContent = "Image Type: Dark";
+        if(mean < 50) image_type.textContent = "Image Type: Dark, Variance: "+variance;
         //light
-        else if(mean > 205) image_type.textContent = "Image Type: Light";
-        else image_type.textContent = variance;
+        else if(mean > 205) image_type.textContent = "Image Type: Light, Variance: "+variance;
+        else image_type.textContent = "Variance: "+variance;
 
         //get histogram holder and append
         return image_type
